@@ -11,6 +11,7 @@
 #include<iomanip>
 #include<cmath>
 #include<stdlib.h>
+#include <fstream>
 
 #include<random>  
 #include<time.h>  
@@ -84,6 +85,7 @@ BEGIN_MESSAGE_MAP(CMFCApplication1Dlg, CDialogEx)
 	ON_WM_TIMER()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONDBLCLK()
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -133,7 +135,8 @@ BOOL CMFCApplication1Dlg::OnInitDialog()
 	m_brush.CreatePatternBrush(&m_bitmap);
 	//
 	//MoveWnd();
-	LoadData();
+	LoadLuckUser();//加载已中奖列表
+	LoadData();//加载抽奖列表
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -220,16 +223,13 @@ void CMFCApplication1Dlg::OnBnClickedButton1()
 		//加入到中奖名单中
 		AddToLucy(luckyMan);
 		//Sleep(10);
-		//
-		for (auto p1 = m_users.begin(); p1 != m_users.end();)
-		{
-			if (*p1 == luckyMan)
-			{
-				p1 = m_users.erase(p1);
+		//将中奖者从列表中删除
+		for (auto it = m_users.begin(); it != m_users.end(); ) {
+			if (*it == luckyMan) {
+				it = m_users.erase(it);
 			}
-			else
-			{
-				p1++;
+			else {
+				++it;
 			}
 		}
 		//GetDlgItemText(IDC_EDIT1, luckyMan);
@@ -240,11 +240,11 @@ void CMFCApplication1Dlg::OnBnClickedButton1()
 		flgStr = "";
 		CString finalShow;
 		//finalShow.Format("===Congratulation===\r\n-------------\r\n|" + luckyMan + "|\r\n-------------\r\nYou are the lottery",)
-		luckyMan = "=====恭喜=====\r\n" + flgStr + "\r\n" + luckyMan + "\r\n" + flgStr + "\r\n中奖啦!";
+		finalShow = "=====恭喜=====\r\n" + flgStr + "\r\n" + luckyMan + "\r\n" + flgStr + "\r\n中奖啦!";
 		m_EditBoxShow.SetTextFont(400, _T("FangSong_GB2312"));
 		m_EditBoxShow.SetForeColor(RGB(255, 0, 0));
 		//SetDlgItemText(IDC_EDIT1, luckyMan);
-		m_EditBoxShow.SetWindowText(luckyMan);
+		m_EditBoxShow.SetWindowText(finalShow);
 		//MessageBox(LPCTSTR(luckyMan));
 	}
 }
@@ -324,6 +324,30 @@ void CMFCApplication1Dlg::OnTimer(UINT_PTR nIDEvent)
 	CDialogEx::OnTimer(nIDEvent);
 }
 
+void CMFCApplication1Dlg::LoadLuckUser()
+{
+	CString filepath;
+	filepath = GetCurDirectory() + "\\luckdata.txt";
+	CStdioFile file;
+	//打开文件
+	if (!file.Open(filepath, CFile::modeRead))
+	{
+		AfxMessageBox(_T("文件打开失败。"));
+	}
+	CString strContent;
+	CString strText = _T("");
+	while (file.ReadString(strText))
+	{
+		if (strText != _T("")) {
+			//判断是否在中奖名单中
+			//写入
+			m_luckusers.push_back(strText);
+		}
+	}
+	//关闭文件
+	file.Close();
+}
+
 //取得参数
 void CMFCApplication1Dlg::LoadData()
 {
@@ -396,28 +420,37 @@ CString CMFCApplication1Dlg::GetFileFullNameFromFullPath(CString lpszFullPath)
 //加入到中奖名单
 void CMFCApplication1Dlg::AddToLucy(CString user)
 {
-	CString filepath;
-	filepath = GetCurDirectory() + "\\luckdata.txt";
+	//CString filepath;
+	//filepath = GetCurDirectory() + "\\luckdata.txt";
 
-	CFile   fileDst;
-	fileDst.Open(filepath, CFile::modeCreate | CFile::modeWrite | CFile::modeNoTruncate);
-	//保存数据
-	fileDst.SeekToEnd();
-	user += _T("\r\n");
-	fileDst.Write(user, user.GetLength());
-	//-------------
-	fileDst.Close();//
+	//CFile   fileDst;
+	//fileDst.Open(filepath, CFile::modeCreate | CFile::modeWrite | CFile::modeNoTruncate);
+	////保存数据
+	//fileDst.SeekToEnd();
+	//user += _T("\r\n");
+	//fileDst.Write(user, user.GetLength());
+	////-------------
+	//fileDst.Close();//
+	m_luckusers.push_back(user);
 }
 
 //判断是否在中奖名单中
 BOOL CMFCApplication1Dlg::isExitLuck(CString user)
 {
 	BOOL isExist = FALSE;
-	CString filepath;
+	/*CString filepath;
 	filepath = GetCurDirectory() + "\\luckdata.txt";
 	CString strContent = File_ReadAllLine(filepath);
 	if (strContent.Find(user) != -1) {
 		isExist = TRUE;
+	}*/
+	//从m_luckusers中查询是否存在
+	for (auto item : m_luckusers) {
+		if (item== user)
+		{
+			isExist = TRUE;
+			break;
+		}
 	}
 
 	return isExist;
@@ -460,4 +493,28 @@ void CMFCApplication1Dlg::OnLButtonDblClk(UINT nFlags, CPoint point)
 	//OnBnClickedButton1();
 
 	CDialogEx::OnLButtonDblClk(nFlags, point);
+}
+
+
+
+void CMFCApplication1Dlg::OnClose()
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	CString filepath;
+	filepath = GetCurDirectory() + "\\luckdata.txt";
+	// 打开文件并清空内容
+	CFile   fileDst;
+	fileDst.Open(filepath, CFile::modeCreate | CFile::modeWrite | CFile::modeNoTruncate);
+	// 清空文件内容
+	fileDst.SetLength(0);
+	//保存中奖列表
+	for (auto item : m_luckusers) {
+		CString user = item+ _T("\r\n");
+		fileDst.SeekToEnd();
+		fileDst.Write(user, user.GetLength());
+	}
+	//关闭文件
+	fileDst.Close();
+
+	CDialogEx::OnClose();
 }

@@ -15,7 +15,7 @@ class CMFCApplication1Dlg : public CDialogEx
 public:
 	Mydlg * m_pColorBasedSetting;
 	int m_irand;
-	std::vector<CString> m_users;
+	std::vector<CString> m_users, m_luckusers;
 	CString m_cstrShow;
 	CBitmap m_bitmap;
 	CBrush  m_brush;
@@ -55,4 +55,6 @@ public:
 	CString File_ReadAllLine(CString filepath);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+	void LoadLuckUser();
+	afx_msg void OnClose();
 };
